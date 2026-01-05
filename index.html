@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEON COMMANDER: FINAL HUD</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Jura:wght@300;500;700&display=swap');
+
+        :root {
+            --purple: #bc13fe;
+            --green: #00ff9d;
+            --bg: #050505;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg);
+            overflow: hidden;
+            font-family: 'Orbitron', sans-serif;
+            user-select: none;
+        }
+
+        /* --- FILTROS CINEMATOGRÁFICOS --- */
+        .vignette {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 100%);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .grain {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 6;
+            opacity: 0.4;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+        }
+
+        #ui-layer {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* --- NOVO HUD (SOLICITADO) --- */
+        .hud-top-left {
+            position: absolute;
+            top: 40px; 
+            left: 40px;
+            border-left: 3px solid var(--green); /* Barra lateral neon verde */
+            padding-left: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+
+        .hud-top-left:hover {
+            opacity: 1;
+        }
+
+        .hud-text-small {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem; /* Pequeno e técnico */
+            letter-spacing: 3px;
+            font-weight: 700;
+            color: var(--green);
+            text-shadow: 0 0 5px rgba(0, 255, 157, 0.5); /* Leve brilho */
+        }
+
+        /* --- TEXTOS CINEMATOGRÁFICOS (CENTRALIZADOS) --- */
+        .cinematic-text {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            text-align: center;
+            opacity: 0;
+            width: 100%;
+            transition: opacity 0.8s ease, transform 4s ease-out;
+        }
+
+        .cinematic-text h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 5rem;
+            font-weight: 900;
+            margin: 0;
+            color: #fff;
+            letter-spacing: 15px;
+            text-shadow: 0 0 30px var(--purple);
+            text-transform: uppercase;
+        }
+
+        .cinematic-text p {
+            font-family: 'Jura', sans-serif;
+            font-size: 1.5rem;
+            letter-spacing: 8px;
+            color: var(--green);
+            margin-top: 15px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
+        }
+
+        .cinematic-text.visible {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        /* --- TELA INICIAL --- */
+        #start-screen {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: auto;
+            transition: opacity 0.5s;
+            z-index: 20;
+        }
+
+        .btn-main {
+            background: rgba(0,0,0,0.6);
+            color: var(--green);
+            border: 2px solid var(--green);
+            padding: 20px 60px;
+            font-size: 1.5rem;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.2);
+            transition: 0.3s;
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+            backdrop-filter: blur(5px);
+        }
+
+        .btn-main:hover {
+            background: var(--green);
+            color: #000;
+            box-shadow: 0 0 50px rgba(0, 255, 157, 0.8);
+            transform: scale(1.05);
+        }
+
+        /* --- TELA FINAL --- */
+        #end-screen {
+            position: absolute;
+            bottom: 15%; width: 100%;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s;
+            z-index: 20;
+        }
+
+        #end-screen.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .btn-final {
+            background: transparent;
+            color: var(--purple);
+            border: 2px solid var(--purple);
+            padding: 25px 80px;
+            font-size: 1.8rem;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            letter-spacing: 5px;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 0 30px rgba(188, 19, 254, 0.2);
+            transition: 0.3s;
+        }
+
+        .btn-final:hover {
+            background: var(--purple);
+            color: white;
+            box-shadow: 0 0 80px var(--purple);
+            transform: scale(1.1);
+        }
+
+        #white-flash {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 999;
+            transition: opacity 0.1s;
+        }
+        
+        #fade-white {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 998;
+            transition: opacity 2s ease-in;
+        }
+
+        @media (max-width: 768px) {
+            .cinematic-text h1 { font-size: 2.5rem; letter-spacing: 5px; }
+            .cinematic-text p { font-size: 1rem; letter-spacing: 4px; }
+            .hud-top-left { top: 20px; left: 20px; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="vignette"></div>
+    <div class="grain"></div>
+
+    <div id="canvas-container"></div>
+    <div id="white-flash"></div>
+    <div id="fade-white"></div>
+
+    <div id="ui-layer">
+        
+        <div class="hud-top-left">
+            <div class="hud-text-small">SYS.VER. 9.0</div>
+            <div class="hud-text-small" style="color:#fff; text-shadow:0 0 10px white;">CONEXÃO SEGURA</div>
+        </div>
+
+        <div id="msg1" class="cinematic-text">
+            <h1>INOVAÇÃO</h1>
+            <p>Tecnologia do Futuro</p>
+        </div>
+
+        <div id="msg2" class="cinematic-text">
+            <h1>DESIGN</h1>
+            <p>Beleza e Função</p>
+        </div>
+
+        <div id="msg3" class="cinematic-text">
+            <h1>VELOCIDADE</h1>
+            <p>Performance Máxima</p>
+        </div>
+
+        <div id="msg4" class="cinematic-text">
+            <h1>SEUS PRODUTOS</h1>
+            <p>Disponíveis Agora</p>
+        </div>
+
+        <div id="start-screen">
+            <h1 style="color:#fff; font-size:12px; letter-spacing:8px; opacity:0.6; margin-bottom:20px;">SYSTEM STATUS: ONLINE</h1>
+            <button id="btn-warp" class="btn-main">DECOLAR</button>
+        </div>
+
+        <div id="end-screen">
+            <button id="btn-enter" class="btn-final">INICIAR</button>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        class SpaceExperience {
+            constructor() {
+                this.state = {
+                    phase: 'idle', 
+                    speed: 0,
+                    distance: 0
+                };
+
+                this.config = {
+                    warpSpeed: 10.0, 
+                    warpDistance: 3000, 
+                    colors: {
+                        purple: 0xbc13fe,
+                        green: 0x00ff9d,
+                        dark: 0x0a0a0a
+                    }
+                };
+
+                this.mouse = new THREE.Vector2();
+                this.targetRotation = new THREE.Vector2();
+
+                this.initDOM();
+                this.initThree();
+                this.createStarfield();
+                this.createTronShip(); 
+                this.initPostProcessing();
+                this.addEvents();
+                this.animate();
+            }
+
+            initDOM() {
+                this.dom = {
+                    startScreen: document.getElementById('start-screen'),
+                    btnWarp: document.getElementById('btn-warp'),
+                    endScreen: document.getElementById('end-screen'),
+                    btnEnter: document.getElementById('btn-enter'),
+                    whiteFlash: document.getElementById('white-flash'),
+                    fadeWhite: document.getElementById('fade-white'),
+                    msgs: [
+                        document.getElementById('msg1'),
+                        document.getElementById('msg2'),
+                        document.getElementById('msg3'),
+                        document.getElementById('msg4')
+                    ]
+                };
+
+                this.dom.btnWarp.addEventListener('click', () => this.startWarp());
+                this.dom.btnEnter.addEventListener('click', () => this.launch());
+            }
+
+            initThree() {
+                this.container = document.getElementById('canvas-container');
+                this.scene = new THREE.Scene();
+                this.scene.fog = new THREE.FogExp2(0x000000, 0.001);
+
+                this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 2000);
+                this.camera.position.set(0, 3, 10);
+
+                this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+                this.container.appendChild(this.renderer.domElement);
+
+                const ambient = new THREE.AmbientLight(0xffffff, 0.1);
+                this.scene.add(ambient);
+                
+                const topLight = new THREE.DirectionalLight(this.config.colors.purple, 2);
+                topLight.position.set(0, 10, 5);
+                this.scene.add(topLight);
+            }
+
+            createTronShip() {
+                this.ship = new THREE.Group();
+
+                const hullMat = new THREE.MeshStandardMaterial({
+                    color: 0x050505,
+                    roughness: 0.1,
+                    metalness: 0.8
+                });
+
+                const lineMat = new THREE.LineBasicMaterial({ color: this.config.colors.purple });
+                const engineGlow = new THREE.MeshBasicMaterial({ color: this.config.colors.green });
+
+                // Corpo
+                const bodyGeo = new THREE.ConeGeometry(1.2, 8, 6);
+                bodyGeo.rotateX(Math.PI / 2);
+                const body = new THREE.Mesh(bodyGeo, hullMat);
+                
+                const bodyEdges = new THREE.EdgesGeometry(bodyGeo);
+                const bodyLines = new THREE.LineSegments(bodyEdges, lineMat);
+                body.add(bodyLines);
+                this.ship.add(body);
+
+                // Asas
+                const wingGeo = new THREE.BufferGeometry();
+                const wingVertices = new Float32Array([
+                    0, 0, 2, 4, 0, 3, 0, 0, 4,
+                    0, 0, 2, 4, 0, 3, 0, 0, 4
+                ]);
+                wingGeo.setAttribute('position', new THREE.BufferAttribute(wingVertices, 3));
+                wingGeo.computeVertexNormals();
+                
+                const wingL = new THREE.Mesh(wingGeo, hullMat);
+                wingL.add(new THREE.LineSegments(new THREE.EdgesGeometry(wingGeo), lineMat));
+                wingL.position.x = -0.5;
+                this.ship.add(wingL);
+
+                const wingR = new THREE.Mesh(wingGeo, hullMat);
+                wingR.add(new THREE.LineSegments(new THREE.EdgesGeometry(wingGeo), lineMat));
+                wingR.scale.x = -1;
+                wingR.position.x = 0.5;
+                this.ship.add(wingR);
+
+                // Motores
+                const engineGeo = new THREE.CylinderGeometry(0.5, 0.8, 2, 8);
+                engineGeo.rotateX(Math.PI / 2);
+                
+                const engineL = new THREE.Mesh(engineGeo, hullMat);
+                engineL.position.set(-1.5, 0, 3.5);
+                engineL.add(new THREE.LineSegments(new THREE.EdgesGeometry(engineGeo), new THREE.LineBasicMaterial({ color: this.config.colors.green })));
+                this.ship.add(engineL);
+
+                const engineR = new THREE.Mesh(engineGeo, hullMat);
+                engineR.position.set(1.5, 0, 3.5);
+                engineR.add(new THREE.LineSegments(new THREE.EdgesGeometry(engineGeo), new THREE.LineBasicMaterial({ color: this.config.colors.green })));
+                this.ship.add(engineR);
+
+                // Propulsores
+                const thrusterGeo = new THREE.CircleGeometry(0.6, 8);
+                const t1 = new THREE.Mesh(thrusterGeo, engineGlow);
+                t1.position.set(-1.5, 0, 4.51); t1.rotation.y = Math.PI;
+                this.ship.add(t1);
+
+                const t2 = new THREE.Mesh(thrusterGeo, engineGlow);
+                t2.position.set(1.5, 0, 4.51); t2.rotation.y = Math.PI;
+                this.ship.add(t2);
+
+                this.engineLight = new THREE.PointLight(this.config.colors.green, 0, 20);
+                this.engineLight.position.set(0, 0, 5);
+                this.ship.add(this.engineLight);
+
+                this.scene.add(this.ship);
+            }
+
+            createStarfield() {
+                const count = 3000;
+                const geometry = new THREE.BoxGeometry(0.1, 0.1, 2);
+                const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+                this.stars = new THREE.InstancedMesh(geometry, material, count);
+                
+                this.starData = [];
+                const dummy = new THREE.Object3D();
+                for(let i=0; i<count; i++) {
+                    const x = (Math.random() - 0.5) * 600;
+                    const y = (Math.random() - 0.5) * 600;
+                    const z = (Math.random() - 0.5) * 2000;
+                    dummy.position.set(x, y, z);
+                    dummy.updateMatrix();
+                    this.stars.setMatrixAt(i, dummy.matrix);
+                    this.starData.push({x,y,z});
+                }
+                this.scene.add(this.stars);
+            }
+
+            initPostProcessing() {
+                this.composer = new EffectComposer(this.renderer);
+                this.composer.addPass(new RenderPass(this.scene, this.camera));
+                
+                const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 2.0, 0.5, 0.1);
+                this.composer.addPass(bloom);
+            }
+
+            addEvents() {
+                window.addEventListener('mousemove', (e) => {
+                    this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                    this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+                });
+                window.addEventListener('resize', () => {
+                    this.camera.aspect = window.innerWidth / window.innerHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                    this.composer.setSize(window.innerWidth, window.innerHeight);
+                });
+            }
+
+            startWarp() {
+                this.state.phase = 'warp';
+                this.dom.startScreen.style.opacity = '0';
+                this.dom.startScreen.style.pointerEvents = 'none';
+                this.engineLight.intensity = 5; 
+            }
+
+            launch() {
+                this.state.phase = 'launch';
+                this.dom.endScreen.style.opacity = '0';
+                this.dom.endScreen.style.pointerEvents = 'none';
+
+                this.dom.whiteFlash.style.opacity = '0.8';
+                setTimeout(() => { this.dom.whiteFlash.style.opacity = '0'; }, 100);
+
+                setTimeout(() => {
+                    this.dom.fadeWhite.style.opacity = '1';
+                }, 1000);
+
+                // REDIRECIONAMENTO AQUI
+                setTimeout(() => {
+                    window.location.href = "http://127.0.0.1:5500/pagina.index.html"; // Certifique-se que o arquivo da loja tem esse nome
+                }, 2500);
+            }
+
+            updateTexts(percent) {
+                const msgs = this.dom.msgs;
+                const duration = 0.14; 
+
+                const check = (start, el) => {
+                    if (percent > start && percent < (start + duration)) el.classList.add('visible');
+                    else el.classList.remove('visible');
+                }
+
+                check(0.15, msgs[0]);
+                check(0.35, msgs[1]);
+                check(0.55, msgs[2]);
+                check(0.75, msgs[3]);
+            }
+
+            animate() {
+                requestAnimationFrame(this.animate.bind(this));
+
+                if (this.state.phase !== 'launch') {
+                    this.targetRotation.x = this.mouse.y * 0.4;
+                    this.targetRotation.y = -this.mouse.x * 0.4;
+                    
+                    this.ship.rotation.x += (this.targetRotation.x - this.ship.rotation.x) * 0.05;
+                    this.ship.rotation.y += (this.targetRotation.y - this.ship.rotation.y) * 0.05;
+                    this.ship.rotation.z = -this.ship.rotation.y * 0.8; 
+
+                    this.ship.position.x += (this.mouse.x * 4 - this.ship.position.x) * 0.05;
+                    this.ship.position.y += (this.mouse.y * 2 - this.ship.position.y) * 0.05;
+                    
+                    this.camera.position.x += (this.ship.position.x * 0.5 - this.camera.position.x) * 0.05;
+                    this.camera.position.y += (this.ship.position.y * 0.5 + 3 - this.camera.position.y) * 0.05;
+                } else {
+                    this.ship.position.z -= 4; 
+                    this.ship.scale.z = 3; 
+                    this.camera.position.x += (Math.random()-0.5) * 0.5;
+                    this.camera.position.y += (Math.random()-0.5) * 0.5;
+                }
+
+                if (this.state.phase === 'warp') {
+                    if (this.state.speed < this.config.warpSpeed) this.state.speed += 0.05;
+                    
+                    this.state.distance += this.state.speed;
+                    const pct = this.state.distance / this.config.warpDistance;
+                    
+                    this.updateTexts(pct);
+                    
+                    if (pct >= 1) this.state.phase = 'arrived';
+
+                } else if (this.state.phase === 'arrived') {
+                    this.state.speed *= 0.95; 
+                    if (this.state.speed < 0.2) {
+                        this.state.speed = 0.2; 
+                        this.dom.endScreen.classList.add('active');
+                    }
+                }
+
+                const currentSpeed = (this.state.phase === 'launch') ? 50 : this.state.speed;
+
+                for(let i=0; i<3000; i++) {
+                    let d = this.starData[i];
+                    d.z += currentSpeed * 10 + 0.2;
+                    if (d.z > 20) d.z -= 2000;
+
+                    const dummy = new THREE.Object3D();
+                    dummy.position.set(d.x, d.y, d.z);
+                    const stretch = 1 + (currentSpeed * 2);
+                    dummy.scale.set(1, 1, stretch);
+                    dummy.updateMatrix();
+                    this.stars.setMatrixAt(i, dummy.matrix);
+                }
+                this.stars.instanceMatrix.needsUpdate = true;
+
+                this.composer.render();
+            }
+        }
+
+        new SpaceExperience();
+    </script>
+</body>
+</html>

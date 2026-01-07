@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEON COMMANDER: FINAL HUD</title>
+    <title>NEON COMMANDER: ULTIMATE UI</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Jura:wght@300;500;700&display=swap');
 
@@ -11,215 +11,223 @@
             --purple: #bc13fe;
             --green: #00ff9d;
             --bg: #050505;
+            --glass-bg: rgba(0, 0, 0, 0.4);
+            --glass-border: rgba(0, 255, 157, 0.3);
         }
 
         body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
+            margin: 0; padding: 0; width: 100%; height: 100%;
             background-color: var(--bg);
             overflow: hidden;
             font-family: 'Orbitron', sans-serif;
             user-select: none;
         }
 
-        /* --- FILTROS CINEMATOGRÁFICOS --- */
+        /* --- FILTROS DE IMERSÃO --- */
         .vignette {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 100%);
-            pointer-events: none;
-            z-index: 5;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.9) 100%);
+            pointer-events: none; z-index: 5;
         }
 
         .grain {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
-            pointer-events: none;
-            z-index: 6;
-            opacity: 0.4;
+            pointer-events: none; z-index: 6; opacity: 0.3;
         }
 
-        #canvas-container {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 1;
-        }
-
+        #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        
         #ui-layer {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 10;
-            pointer-events: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10; pointer-events: none;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            grid-template-columns: 1fr 1fr 1fr;
         }
 
-        /* --- NOVO HUD (SOLICITADO) --- */
+        /* --- HUD ELEMENT: INFO LATERAL ESQUERDA (Mantido do original) --- */
         .hud-top-left {
-            position: absolute;
-            top: 40px; 
-            left: 40px;
-            border-left: 3px solid var(--green); /* Barra lateral neon verde */
-            padding-left: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            opacity: 0.8;
+            position: absolute; top: 40px; left: 40px;
+            border-left: 3px solid var(--green);
+            padding-left: 15px; opacity: 0.8;
             transition: opacity 0.3s;
-        }
-
-        .hud-top-left:hover {
-            opacity: 1;
-        }
-
-        .hud-text-small {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.8rem; /* Pequeno e técnico */
-            letter-spacing: 3px;
-            font-weight: 700;
-            color: var(--green);
-            text-shadow: 0 0 5px rgba(0, 255, 157, 0.5); /* Leve brilho */
-        }
-
-        /* --- TEXTOS CINEMATOGRÁFICOS (CENTRALIZADOS) --- */
-        .cinematic-text {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%) scale(0.9);
-            text-align: center;
-            opacity: 0;
-            width: 100%;
-            transition: opacity 0.8s ease, transform 4s ease-out;
-        }
-
-        .cinematic-text h1 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 5rem;
-            font-weight: 900;
-            margin: 0;
-            color: #fff;
-            letter-spacing: 15px;
-            text-shadow: 0 0 30px var(--purple);
-            text-transform: uppercase;
-        }
-
-        .cinematic-text p {
-            font-family: 'Jura', sans-serif;
-            font-size: 1.5rem;
-            letter-spacing: 8px;
-            color: var(--green);
-            margin-top: 15px;
-            text-transform: uppercase;
-            text-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
-        }
-
-        .cinematic-text.visible {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1.1);
-        }
-
-        /* --- TELA INICIAL --- */
-        #start-screen {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
             pointer-events: auto;
-            transition: opacity 0.5s;
-            z-index: 20;
+        }
+        .hud-text-small {
+            font-size: 0.7rem; letter-spacing: 2px; color: var(--green);
+            text-shadow: 0 0 5px rgba(0, 255, 157, 0.5);
         }
 
+        /* --- CONTAINER DA NOVA INTERFACE INICIAL --- */
+        #main-interface {
+            grid-column: 1 / -1; grid-row: 1 / -1;
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            grid-template-rows: 150px 1fr;
+            width: 100%; height: 100%;
+            padding: 40px;
+            box-sizing: border-box;
+            transition: opacity 0.8s ease, transform 0.8s ease;
+            transform: perspective(1000px);
+        }
+
+        /* 1. SEÇÃO DAS ESTRELAS (Topo Central) */
+        .top-stats-container {
+            grid-column: 2 / 3; grid-row: 1 / 2;
+            display: flex; justify-content: center; gap: 30px;
+            align-items: flex-start;
+            z-index: 12;
+            pointer-events: auto;
+        }
+
+        .stat-module {
+            background: var(--glass-bg);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--glass-border);
+            padding: 10px 20px;
+            border-radius: 4px;
+            text-align: center;
+            clip-path: polygon(10% 0, 100% 0, 100% 80%, 90% 100%, 0 100%, 0 20%);
+            box-shadow: 0 0 15px rgba(0, 255, 157, 0.1);
+            transition: transform 0.3s;
+        }
+        .stat-module:hover { transform: translateY(5px); box-shadow: 0 0 25px rgba(0, 255, 157, 0.3); }
+        
+        .stars { color: var(--green); letter-spacing: 3px; font-size: 1rem; text-shadow: 0 0 8px var(--green); }
+        .stat-label { 
+            display: block; font-family: 'Jura', sans-serif; font-size: 0.7rem; 
+            color: #fff; margin-top: 5px; text-transform: uppercase; letter-spacing: 2px; 
+        }
+
+        /* 2. TÍTULO CENTRAL E SUBTÍTULO */
+        .center-hero {
+            grid-column: 2 / 3; grid-row: 2 / 3;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            text-align: center;
+            position: relative;
+            z-index: 20; /* Fica na frente da nave */
+        }
+
+        .title-3d {
+            font-size: 6rem; font-weight: 900;
+            color: #fff; text-transform: uppercase; letter-spacing: -2px; line-height: 0.9;
+            /* Efeito 3D Complexo */
+            text-shadow: 
+                0 0 10px var(--purple),
+                3px 3px 0px rgba(188, 19, 254, 0.4),
+                6px 6px 0px rgba(188, 19, 254, 0.2);
+            animation: breathe 4s infinite ease-in-out;
+            margin-bottom: 10px;
+        }
+
+        .subtitle-3d {
+            font-family: 'Jura', sans-serif; font-size: 1.2rem;
+            color: var(--green); letter-spacing: 8px; text-transform: uppercase;
+            background: rgba(0,0,0,0.6); padding: 5px 20px;
+            border-left: 2px solid var(--green); border-right: 2px solid var(--green);
+            backdrop-filter: blur(4px);
+        }
+
+        /* 3. PAINEL DIREITO (Glassmorphism Holográfico) */
+        .right-panel-container {
+            grid-column: 3 / 4; grid-row: 2 / 3;
+            display: flex; align-items: center; justify-content: flex-end;
+            pointer-events: auto;
+        }
+
+        .holo-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.8) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-right: 3px solid var(--purple);
+            padding: 30px;
+            width: 100%; max-width: 320px;
+            transform: perspective(1000px) rotateY(-15deg);
+            transition: transform 0.4s ease, border-color 0.4s;
+            position: relative;
+        }
+
+        .holo-card:hover {
+            transform: perspective(1000px) rotateY(0deg);
+            border-right-color: var(--green);
+        }
+
+        .holo-card h3 {
+            color: #fff; font-size: 1.4rem; margin: 0 0 15px 0;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+            border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;
+        }
+
+        .holo-card p {
+            font-family: 'Jura', sans-serif; color: #ccc; font-size: 0.9rem; line-height: 1.6; margin: 0;
+        }
+        
         .btn-main {
-            background: rgba(0,0,0,0.6);
-            color: var(--green);
-            border: 2px solid var(--green);
-            padding: 20px 60px;
-            font-size: 1.5rem;
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 4px;
-            cursor: pointer;
-            box-shadow: 0 0 20px rgba(0, 255, 157, 0.2);
-            transition: 0.3s;
+            margin-top: 40px;
+            background: rgba(0,0,0,0.6); color: var(--green);
+            border: 2px solid var(--green); padding: 20px 60px;
+            font-size: 1.5rem; font-family: 'Orbitron', sans-serif; font-weight: 900;
+            text-transform: uppercase; letter-spacing: 4px; cursor: pointer;
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.2); transition: 0.3s;
+            pointer-events: auto;
             clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
-            backdrop-filter: blur(5px);
+        }
+        .btn-main:hover {
+            background: var(--green); color: #000;
+            box-shadow: 0 0 50px rgba(0, 255, 157, 0.8); transform: scale(1.05);
         }
 
-        .btn-main:hover {
-            background: var(--green);
-            color: #000;
-            box-shadow: 0 0 50px rgba(0, 255, 157, 0.8);
-            transform: scale(1.05);
+        /* --- TEXTOS CINEMATOGRÁFICOS (WARP) --- */
+        .cinematic-text {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            text-align: center; opacity: 0; width: 100%; pointer-events: none;
+            transition: opacity 0.5s ease, transform 4s ease-out;
+            z-index: 30;
         }
+        .cinematic-text h1 {
+            font-size: 5rem; font-weight: 900; color: #fff; letter-spacing: 15px;
+            text-shadow: 0 0 30px var(--purple); text-transform: uppercase; margin: 0;
+        }
+        .cinematic-text p {
+            font-family: 'Jura', sans-serif; font-size: 1.5rem; letter-spacing: 8px;
+            color: var(--green); margin-top: 15px; text-transform: uppercase;
+        }
+        .cinematic-text.visible { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
 
         /* --- TELA FINAL --- */
         #end-screen {
-            position: absolute;
-            bottom: 15%; width: 100%;
-            text-align: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 1s;
-            z-index: 20;
+            position: absolute; bottom: 15%; width: 100%; text-align: center;
+            opacity: 0; pointer-events: none; transition: opacity 1s; z-index: 20;
         }
-
-        #end-screen.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
+        #end-screen.active { opacity: 1; pointer-events: auto; }
         .btn-final {
-            background: transparent;
-            color: var(--purple);
-            border: 2px solid var(--purple);
-            padding: 25px 80px;
-            font-size: 1.8rem;
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 900;
-            letter-spacing: 5px;
-            cursor: pointer;
-            text-transform: uppercase;
-            box-shadow: 0 0 30px rgba(188, 19, 254, 0.2);
-            transition: 0.3s;
+            background: transparent; color: var(--purple); border: 2px solid var(--purple);
+            padding: 25px 80px; font-size: 1.8rem; font-family: 'Orbitron', sans-serif;
+            font-weight: 900; letter-spacing: 5px; cursor: pointer; text-transform: uppercase;
+            box-shadow: 0 0 30px rgba(188, 19, 254, 0.2); transition: 0.3s;
         }
-
         .btn-final:hover {
-            background: var(--purple);
-            color: white;
-            box-shadow: 0 0 80px var(--purple);
-            transform: scale(1.1);
+            background: var(--purple); color: white;
+            box-shadow: 0 0 80px var(--purple); transform: scale(1.1);
         }
 
-        #white-flash {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: white;
-            opacity: 0;
-            pointer-events: none;
-            z-index: 999;
-            transition: opacity 0.1s;
-        }
-        
-        #fade-white {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: white;
-            opacity: 0;
-            pointer-events: none;
-            z-index: 998;
-            transition: opacity 2s ease-in;
-        }
+        /* Flash Effects */
+        #white-flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; opacity: 0; pointer-events: none; z-index: 999; transition: opacity 0.1s; }
+        #fade-white { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; opacity: 0; pointer-events: none; z-index: 998; transition: opacity 2s ease-in; }
 
-        @media (max-width: 768px) {
-            .cinematic-text h1 { font-size: 2.5rem; letter-spacing: 5px; }
-            .cinematic-text p { font-size: 1rem; letter-spacing: 4px; }
-            .hud-top-left { top: 20px; left: 20px; }
-        }
+        @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
 
+        @media (max-width: 900px) {
+            #main-interface { grid-template-columns: 1fr; grid-template-rows: auto auto auto; padding: 20px; }
+            .top-stats-container { grid-column: 1 / -1; grid-row: 1; margin-bottom: 20px; }
+            .center-hero { grid-column: 1 / -1; grid-row: 2; }
+            .right-panel-container { grid-column: 1 / -1; grid-row: 3; justify-content: center; margin-top: 30px; }
+            .holo-card { transform: none; width: 90%; }
+            .title-3d { font-size: 3.5rem; }
+        }
     </style>
 </head>
 <body>
@@ -236,6 +244,42 @@
         <div class="hud-top-left">
             <div class="hud-text-small">SYS.VER. 9.0</div>
             <div class="hud-text-small" style="color:#fff; text-shadow:0 0 10px white;">CONEXÃO SEGURA</div>
+        </div>
+
+        <div id="main-interface">
+            
+            <div class="top-stats-container">
+                <div class="stat-module">
+                    <div class="stars">★★★★★</div>
+                    <span class="stat-label">PROPULSÃO</span>
+                </div>
+                <div class="stat-module">
+                    <div class="stars">★★★★★</div>
+                    <span class="stat-label">NAVEGAÇÃO</span>
+                </div>
+                <div class="stat-module">
+                    <div class="stars">★★★★★</div>
+                    <span class="stat-label">ESCUDOS</span>
+                </div>
+            </div>
+
+            <div class="center-hero">
+                <h1 class="title-3d">NEON<br>COMMANDER</h1>
+                <div class="subtitle-3d">A Próxima Fronteira Digital</div>
+                
+                <button id="btn-warp" class="btn-main">DECOLAR</button>
+            </div>
+
+            <div class="right-panel-container">
+                <div class="holo-card">
+                    <h3>DADOS DA MISSÃO</h3>
+                    <p>
+                        Sistema pronto para inicialização de dobra. Todos os parâmetros de voo estão otimizados. 
+                        A experiência visual foi atualizada com renderização em tempo real e projeções holográficas de alta fidelidade.
+                    </p>
+                </div>
+            </div>
+
         </div>
 
         <div id="msg1" class="cinematic-text">
@@ -256,11 +300,6 @@
         <div id="msg4" class="cinematic-text">
             <h1>SEUS PRODUTOS</h1>
             <p>Disponíveis Agora</p>
-        </div>
-
-        <div id="start-screen">
-            <h1 style="color:#fff; font-size:12px; letter-spacing:8px; opacity:0.6; margin-bottom:20px;">SYSTEM STATUS: ONLINE</h1>
-            <button id="btn-warp" class="btn-main">DECOLAR</button>
         </div>
 
         <div id="end-screen">
@@ -315,7 +354,8 @@
 
             initDOM() {
                 this.dom = {
-                    startScreen: document.getElementById('start-screen'),
+                    // Atualizado para pegar o container novo
+                    mainInterface: document.getElementById('main-interface'), 
                     btnWarp: document.getElementById('btn-warp'),
                     endScreen: document.getElementById('end-screen'),
                     btnEnter: document.getElementById('btn-enter'),
@@ -333,6 +373,8 @@
                 this.dom.btnEnter.addEventListener('click', () => this.launch());
             }
 
+            // ... (O RESTO DO CÓDIGO THREE.JS PERMANECE IDÊNTICO PARA GARANTIR FUNCIONALIDADE) ...
+            
             initThree() {
                 this.container = document.getElementById('canvas-container');
                 this.scene = new THREE.Scene();
@@ -470,8 +512,12 @@
 
             startWarp() {
                 this.state.phase = 'warp';
-                this.dom.startScreen.style.opacity = '0';
-                this.dom.startScreen.style.pointerEvents = 'none';
+                
+                // AQUI É O TRUQUE: Sumir com a interface nova suavemente
+                this.dom.mainInterface.style.opacity = '0';
+                this.dom.mainInterface.style.transform = 'scale(1.5) perspective(1000px)'; // Efeito de zoom ao sair
+                this.dom.mainInterface.style.pointerEvents = 'none';
+
                 this.engineLight.intensity = 5; 
             }
 
@@ -487,9 +533,9 @@
                     this.dom.fadeWhite.style.opacity = '1';
                 }, 1000);
 
-                // REDIRECIONAMENTO AQUI
+                // REDIRECIONAMENTO
                 setTimeout(() => {
-                    window.location.href = "https://tadeusiaa-create.github.io/pagina-de-produtos/"; // Certifique-se que o arquivo da loja tem esse nome
+                    window.location.href = "https://tadeusiaa-create.github.io/pagina-de-produtos/"; 
                 }, 2500);
             }
 
@@ -572,5 +618,4 @@
         new SpaceExperience();
     </script>
 </body>
-
 </html>

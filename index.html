@@ -282,7 +282,7 @@
 
         /* AJUSTES FINOS PARA CELULARES PEQUENOS */
         @media (max-width: 480px) {
-            .title-3d { font-size: 3.5rem; }
+            .title-3d { font-size: 3.0rem; }
             .holo-card { display: none; } /* Ocultar card de info em telas muito pequenas para limpar visão */
             .stats-row { gap: 5px; }
             .stat-module { padding: 5px 8px; }
@@ -448,7 +448,7 @@
                 this.state = { phase: 'idle', speed: 0, distance: 0 };
                 this.config = { 
                     warpSpeed: 10.0, 
-                    warpDistance: 3000, 
+                    warpDistance: 4500, 
                     colors: { purple: 0xbc13fe, green: 0x00ff9d, blue: 0x00d0ff, dark: 0x0a0a0a }
                 };
 
@@ -714,7 +714,7 @@
 
             updateTexts(percent) {
                 const msgs = this.dom.msgs;
-                const duration = 0.14; 
+                const duration = 0.22; 
                 const check = (start, el) => {
                     if (percent > start && percent < (start + duration)) el.classList.add('visible');
                     else el.classList.remove('visible');
